@@ -30,6 +30,22 @@ void startingPrompt(){ //if you add supplies make sure you add to switch stateme
 	cout<<"What will you choose?"<<endl;
 }
 
+void choosingSupplies(char choice, int &supplyCount, const int MAX_SUPPLY_COUNT, vector<string> &inventory, int &radioBonus){
+	while(supplyCount<MAX_SUPPLY_COUNT){
+		cin>>choice;
+		switch(choice){
+			case 'a': inventory.push_back("water"); cout<<"You chose water.\n"; break;
+			case 'b': inventory.push_back("first aid kit"); cout<<"You chose first aid kit.\n"; break;
+			case 'c': inventory.push_back("canned beans"); cout<<"You chose canned beans.\n"; break;
+			case 'd': inventory.push_back("lighter"); cout<<"You chose a lighter.\n"; break;
+			case 'e': inventory.push_back("rope"); cout<<"You chose rope.\n"; break;
+			case 'f': inventory.push_back("radio"); cout<<"You chose a radio.\n"; radioBonus=50; break;
+			default: cout<<"That is not an option.\n"; --supplyCount; break;
+		}
+		++supplyCount;
+	}
+}
+
 void viewStats(int hunger, int thirst, int energy, vector<string> inventory){
 	/*
 	Prints the value of each stat and the items in the inventory.
@@ -279,21 +295,9 @@ int main(){
 	
 	
 	startingPrompt();
-	
-	while(supplyCount<MAX_SUPPLY_COUNT){
-		cin>>choice;
-		switch(choice){
-			case 'a': inventory.push_back("water"); cout<<"You chose water.\n"; break;
-			case 'b': inventory.push_back("first aid kit"); cout<<"You chose first aid kit.\n"; break;
-			case 'c': inventory.push_back("canned beans"); cout<<"You chose canned beans.\n"; break;
-			case 'd': inventory.push_back("lighter"); cout<<"You chose a lighter.\n"; break;
-			case 'e': inventory.push_back("rope"); cout<<"You chose rope.\n"; break;
-			case 'f': inventory.push_back("radio"); cout<<"You chose a radio.\n"; radioBonus=50; break;
-			default: cout<<"That is not an option.\n"; --supplyCount; break;
-		}
-		++supplyCount;
-	}
+	choosingSupplies(choice, supplyCount, MAX_SUPPLY_COUNT, inventory, radioBonus);
 	cout<<endl;
+	
 	//generating random starting stats
 	srand(time(NULL)); 
 	hunger=rand()%(100-76)+75;
