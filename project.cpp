@@ -23,19 +23,23 @@ struct items{
 };
 
 //supplies and non-food island items
-struct items water {"water", 0, 30, 0};
+struct items sleep_ {"sleep", -10, -20, 20};
+
+struct items water {"water", 0, 30};
 
 struct items firstAidKit {"first aid kit", 0, 0, 50};
 
-struct items cannedBeans {"canned beans", 0, 20, 0};
+struct items cannedBeans {"canned beans", 0, 20};
 
 struct items lighter {"lighter", 0, 0, 10};
 
 struct items rope {"rope", 0, 0, 20};
 
-struct items radio {"radio", 0, 0, 0};
+struct items radio {"radio"};
 
 struct items campfire {"campfire", 0, 0, 15};
+
+struct items shelter {"shelter", 0, 0, 40};
 
 //illnesses and weather
 struct items foodPoisoning {"food poisoning", -30, -30, -30, 1};
@@ -56,8 +60,6 @@ struct items fish {"fish", 20, 0 -20};
 struct items chicken {"chicken", 15, 0, -15};
 
 struct items boar {"boar", 40, 0, -30, 1};
-
-struct items sleep {"sleep", -5, -10, 40};
 //end of items
 
 /*
@@ -73,6 +75,8 @@ void stringToLower(string &);
 
 bool inStringVector(vector<string>, string);
 
+void findAndRemove(vector<string> &, string);
+
 bool inCharVector(vector<char>, char);
 
 bool inIntVector(vector<int>, int);
@@ -82,16 +86,27 @@ void adjustStat(int &);
 /*
 Scenarios
 Seperate by categories:
-collecting supplies (shelter, fire, food, water, random washup), weather, illness
+collecting supplies (shelter, fire, food, water), weather, illness, pure luck, etc
 */
 
 //Collecting Supplies
-void shelter(bool &, int &, vector<string> &);
+void buildShelter(bool &, int &, vector<string> &);
+
+void gatherWater(int &, int &, vector<string> &);
 
 //Weather
 void weather(items, int &, int &, int &);
 
+//Illness
+bool hasPoisoning();
+
+//Pure luck
 bool rescuedEarly(int radioBonus, bool &);
+
+void randomWashup(vector<string> &);
+
+//Other
+void endOfDay(int &, int &, int &, bool);
 
 int main(){
 	/*
@@ -125,26 +140,34 @@ int main(){
 	Sleep(2000);
 	cout<<"Good Luck.\n"<<endl;
 	Sleep(1000);
-	viewStats(hunger, thirst, energy, inventory);
 	
 	while((hunger>0&&thirst>0&&energy>0)&&(dayCount<30)){ //loop ends when any of the stats go below 0 or survived 30 days
 		dayCount++;
-		cout<<"Day: "<<dayCount<<endl;
-		Sleep(1000);
-		
-		if(dayCount>=15){ //chance to get rescued early
+		if(dayCount>=15){ //chance to get rescued early. keep at top of while loop
 			if(rescuedEarly(radioBonus, early)){
 				break;
 			}
 		}
 		
+		cout<<"Day: "<<dayCount<<endl;
+		Sleep(1000);
+		viewStats(hunger, thirst, energy, inventory);
+		
+		
 		
 		if(!hasShelter){ //if the user does not have shelter built
-			shelter(hasShelter, energy, inventory);
+			buildShelter(hasShelter, energy, inventory);
 		}
 		
+		randomWashup(inventory);
+		
+		if(thirst<=60){ //if thirst goes below 60
+			gatherWater(thirst, energy, inventory);
+		}
+		
+		endOfDay(hunger, thirst, energy, hasShelter);
 		// viewStats(hunger, thirst, energy, inventory);
-		cout<<"\n------------------------------------------------------------------------------"<<endl;
+		cout<<endl<<"------------------------------------------------------------------------------"<<endl;
 	}//end of while loop
 	
 	
@@ -252,13 +275,13 @@ void viewStats(int hunger, int thirst, int energy, vector<string> inventory){
 	Sleep(500);
 	
 	if(inventory.size()==0){
-			cout<<"None."<<endl;
+			cout<<"None";
 	}
 	else if(inventory.size()==1){
-		cout<<inventory[0]<<endl;
+		cout<<inventory[0];
 	}
 	else if(inventory.size()==2){
-		cout<<inventory[0]<<" and "<<inventory[1]<<endl;
+		cout<<inventory[0]<<" and "<<inventory[1];
 	}
 	else{
 		for(int i=0; i<inventory.size(); i++){
@@ -272,7 +295,7 @@ void viewStats(int hunger, int thirst, int energy, vector<string> inventory){
 			Sleep(500);
 		}
 	}
-	cout<<".\n"<<endl;
+	cout<<".\n\n"<<flush;
 }
 
 void stringToLower(string &s){
@@ -298,6 +321,19 @@ bool inStringVector(vector<string> v, string s){
 		}
 	}
 	return 0;
+}
+
+void findAndRemove(vector<string> &v, string s){
+	/*
+	Finds an elements in a string vector and if the string is in the vector,
+	it is removed.
+	Parameters: A string vector passed by reference and the string you want to remove
+	Outputs: Removes string from the vector
+	*/
+	auto it=find(v.begin(), v.end(), s);
+	if(it!=v.end()){ //if element is in vector
+		v.erase(it);
+	}
 }
 
 bool inCharVector(vector<char> v, char c){
@@ -342,16 +378,16 @@ void adjustStat(int &stat_){
 /*
 Scenarios
 Seperate by categories:
-collecting supplies (shelter, fire, food, water, random washup), weather, illness
+collecting supplies (shelter, fire, food, water), weather, illness, pure luck
 */
 
 //Collecting Supplies
-void shelter(bool &hasShelter, int &energy, vector<string> &inventory){
+void buildShelter(bool &hasShelter, int &energy, vector<string> &inventory){
 	/*
 	Asks user if they want to build a shelter.
 	Parameters: pass boolean hasShelter, int energy, and string vectory inventory by reference
 	Outputs: none; only changes value of hasShelter, energy, and inventory if user has a rope and
-			 chooses to use it
+	chooses to use it
 	*/
 	string choice="";
 	
@@ -364,7 +400,6 @@ void shelter(bool &hasShelter, int &energy, vector<string> &inventory){
 			if(inStringVector(inventory, "rope")){ //if user has rope in their inventory
 				choice="";
 				cout<<"Would you like to use your rope to build the shelter?"<<endl;
-				Sleep(1000);
 				cout<<"This will take 20 less energy than building the shelter without a rope."<<endl;
 				while(choice!="yes"&&choice!="no"){
 					cout<<">>";
@@ -372,7 +407,7 @@ void shelter(bool &hasShelter, int &energy, vector<string> &inventory){
 					stringToLower(choice);
 					if(choice=="yes"){
 						energy+=rope.energy;
-						inventory.erase(remove(inventory.begin(), inventory.end(), "rope"), inventory.end());
+						findAndRemove(inventory, "rope"); //removes one rope from inventory
 						//add 20 energy so when the energy is subtracted 40, the net change is -20
 						//also, remove "rope" from inventory
 						cout<<"You have used your rope."<<endl;
@@ -386,7 +421,7 @@ void shelter(bool &hasShelter, int &energy, vector<string> &inventory){
 				}
 			}
 			Sleep(500);
-			energy-=40;
+			energy-=shelter.energy;
 			cout<<"You have built a shelter to protect yourself."<<endl;
 			hasShelter=1;
 		}
@@ -398,6 +433,65 @@ void shelter(bool &hasShelter, int &energy, vector<string> &inventory){
 			cout<<"Not a valid answer. Please type 'yes' or 'no'."<<endl;
 		}
 	}
+	adjustStat(energy);
+	Sleep(2000);
+}
+
+void gatherWater(int &thirst, int &energy, vector<string> &inventory){
+	string choice="";
+	bool usedWater=0;
+	
+	if(inStringVector(inventory, "water")){
+		cout<<"You're getting thirsty. Would you like to use one of your water?"<<endl;
+		usedWater=1;
+		while(choice!="yes"&&choice!="no"){
+			cout<<">>";
+			cin>>choice;
+			stringToLower(choice);
+			if(choice=="yes"){
+				thirst+=water.thirst;
+				adjustStat(thirst);
+				findAndRemove(inventory, "water"); //removes one water from inventory
+				cout<<"You have used one water and gained "<<water.thirst<<" thirst."<<endl;
+				Sleep(2000);
+			}
+			else if(choice=="no"){
+				cout<<"You decided to not use a water."<<endl;
+				Sleep(2000);
+			}
+			else{
+				cout<<"Not a valid answer. Please type 'yes' or 'no'."<<endl;
+			}
+		}
+	}
+	
+	if(usedWater==1){
+		cout<<"Would you like to go out and gather water?"<<endl;
+	}
+	else{
+		cout<<"You're getting thirsty. Would you like to gather water?"<<endl;
+	}
+	gatheredWater.thirst=rand()%(30-10)+10; //random amount between 10 and 30
+	choice="";
+	while(choice!="yes"&&choice!="no"){
+		cout<<">>";
+		cin>>choice;
+		stringToLower(choice);
+		
+		if(choice=="yes"){
+			thirst+=gatheredWater.thirst;
+			energy+=gatheredWater.energy;
+			cout<<"You have gained "<<gatheredWater.thirst<<" thirst and lost "<<-gatheredWater.energy<<" energy."<<endl;
+			adjustStat(thirst);
+		}
+		else if(choice=="no"){
+			cout<<"You decided not to gather water."<<endl;
+		}
+		else{
+			cout<<"Not a valid answer. Please type 'yes' or 'no'."<<endl;
+		}
+	}
+	cout<<endl;
 	Sleep(2000);
 }
 
@@ -422,9 +516,28 @@ void weather(items weather, int &hunger, int &thirst, int &energy){
 	hunger+=weather.hunger;
 	thirst+=weather.thirst;
 	energy+=weather.energy;
+	cout<<endl;
 	Sleep(3000);
 }
 
+//Illness
+bool hasPoisoning(){
+	/*
+	Determines if a player gets food poisoning. There is a 33% chance they do
+	Inputs: None
+	Outputs: If the random number generated from 1 to 3 is equal to 1, true is returned.
+	If not, false is returned.
+	*/
+	int chanceOfPoisoning=1+rand()%3;
+	if(chanceOfPoisoning==1){
+		return 1;
+	}
+	else{
+		return 0;
+	}
+}
+
+//Pure luck
 bool rescuedEarly(int radioBonus, bool &early){
 	/*
 	Determines if the player gets rescued early
@@ -442,3 +555,50 @@ bool rescuedEarly(int radioBonus, bool &early){
 		return 0;
 	}
 }
+
+void randomWashup(vector<string> &inventory){
+	/*
+	There is a ten percent chance that something washes up to the shore (r1).
+	If you get lucky, then it randomly gives you a supply from the plane (r2).
+	If not, nothing happens.
+	Inputs: The inventory vector
+	Outputs: Addes the item to the inventory if the player gets lucky
+	*/
+	int r1=1+rand()%10, r2=1+rand()%5;
+	string a[5]={"water bottle", "first aid kit", "canned beans", "lighter", "rope"};
+	if(r1==1){
+		cout<<"A "<<a[r2-1]<<" washed up to the shore!"<<endl<<endl;
+		Sleep(3000);
+		if(r2==1){
+			inventory.push_back("water");
+		}
+		else{
+			inventory.push_back(a[r2-1]);
+		}
+	}
+}
+
+//Other
+void endOfDay(int &hunger, int &thirst, int &energy, bool hasShelter){
+	/*
+	At the end of each day, the player will lose a bit of hunger and thirst
+	But gain a little energy, depending on if they have a shelter or not
+	Parameters: Pass stats by reference and pass boolean hasShelter
+	Outputs: Stats are affected. If player has a shelter, they will gain a bit
+	more energy than if they didnt have a shelter
+	*/
+	cout<<"The sun sets and you rest."<<endl;
+	sleep_.hunger=-(1+rand()%20); //lose a random amount of thirst and hunger (1-20)
+	sleep_.thirst=-(1+rand()%20);
+	hunger+=sleep_.hunger;
+	thirst+=sleep_.thirst;
+	if(hasShelter){
+		energy+=(sleep_.energy+10); //if shelter, player gains 30 energy instead of 20
+	}
+	else{
+		energy+=sleep_.energy;
+	}
+	adjustStat(energy);
+	Sleep(5000);
+}
+
