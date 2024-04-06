@@ -23,7 +23,6 @@ struct items{
 };
 
 //supplies and non-food island items
-
 struct items water {"water", 0, 30, 0};
 
 struct items firstAidKit {"first aid kit", 0, 0, 50};
@@ -92,14 +91,15 @@ void shelter(bool &, int &, vector<string> &);
 //Weather
 void weather(items, int &, int &, int &);
 
+bool rescuedEarly(int radioBonus, bool &);
 
 int main(){
 	/*
 	variables
 	*/
 	const int MAX_SUPPLY_COUNT=3;
-	bool hasShelter=0;
-	int hunger=0, thirst=0, energy=0, supplyCount=0, dayCount=0, rescueEarlyChance, radioBonus=0;
+	bool hasShelter=0, early=0;
+	int hunger=0, thirst=0, energy=0, supplyCount=0, dayCount=0, radioBonus=0;
 	int scenario;
 	vector<string> inventory;
 	char choice;
@@ -133,9 +133,7 @@ int main(){
 		Sleep(1000);
 		
 		if(dayCount>=15){ //chance to get rescued early
-			rescueEarlyChance=1+rand()%(100-radioBonus); //if chose radio 10%, else 5%
-			if(rescueEarlyChance<=5){
-				rescueEarlyChance=0;
+			if(rescuedEarly(radioBonus, early)){
 				break;
 			}
 		}
@@ -161,7 +159,7 @@ int main(){
 		Sleep(4000);
 		cout<<"Good job!"<<endl;
 	}
-	else if(rescueEarlyChance==0){
+	else if(early){
 		cout<<"You were rescued early on day "<<dayCount<<"!"<<endl;
 		Sleep(4000);
 		cout<<"You were brought to home safely and you were later interviewed by international"<<endl;
@@ -373,7 +371,7 @@ void shelter(bool &hasShelter, int &energy, vector<string> &inventory){
 					cin>>choice;
 					stringToLower(choice);
 					if(choice=="yes"){
-						energy+=20;
+						energy+=rope.energy;
 						inventory.erase(remove(inventory.begin(), inventory.end(), "rope"), inventory.end());
 						//add 20 energy so when the energy is subtracted 40, the net change is -20
 						//also, remove "rope" from inventory
@@ -425,4 +423,22 @@ void weather(items weather, int &hunger, int &thirst, int &energy){
 	thirst+=weather.thirst;
 	energy+=weather.energy;
 	Sleep(3000);
+}
+
+bool rescuedEarly(int radioBonus, bool &early){
+	/*
+	Determines if the player gets rescued early
+	Parameters: The bonus for choosing the radio, which increases the chances to
+	get rescued early, and boolean early, which if the user is returned early this
+	becomes true. if not, it stays false.
+	Outputs: 1 if the user got lucky and got rescued early, 0 if not
+	*/
+	int rescueEarlyChance=1+rand()%(100-radioBonus); //5% if no radioBonus, 10% if radioBonus
+	if(rescueEarlyChance<=5){
+		early=1;
+		return 1;
+	}
+	else{
+		return 0;
+	}
 }
