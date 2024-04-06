@@ -25,7 +25,7 @@ struct items{
 //supplies and non-food island items
 struct items sleep_ {"sleep", -10, -20, 20};
 
-struct items water {"water", 0, 30};
+struct items water {"water bottle", 0, 30};
 
 struct items firstAidKit {"first aid kit", 0, 0, 50};
 
@@ -53,13 +53,15 @@ struct items coconut {"coconut", 5, 0, -5};
 
 struct items berries {"berries", 2, 0, -2}; //chance to be poisonous?
 
-struct items gatheredWater {"water", 0, rand()%(30-10)+10, -10};//gain random amount of thirst from 10 to 30
+struct items gatheredWater {"water", 0, rand()%(30-10)+10, -30};//gain random amount of thirst from 10 to 30
 
-struct items fish {"fish", 20, 0 -20};
+struct items fish {"fish", 15, 0 -40};
 
-struct items chicken {"chicken", 15, 0, -15};
+struct items shark {"shark", 0, 0, -70, 1};
 
-struct items boar {"boar", 40, 0, -30, 1};
+struct items chicken {"chicken", 20, 0, -30};
+
+struct items boar {"boar", 40, 0, -60, 1};
 //end of items
 
 /*
@@ -67,7 +69,7 @@ Basic Functions
 */
 void startingPrompt();
 
-void choosingSupplies(char, int &, const int , vector<string> &, int &);
+void choosingSupplies(int &, const int , vector<string> &, int &);
 
 void viewStats(int, int, int, vector<string>);
 
@@ -94,6 +96,18 @@ void buildShelter(bool &, int &, vector<string> &);
 
 void gatherWater(int &, int &, vector<string> &);
 
+void gatherFood(vector<string> &, int &, int &, int &);
+
+void gatheredCoconut(vector<string> &, int &);
+
+void gatheredBerries(vector<string> &, int &);
+
+void gatheredChicken(vector<string> &, int &);
+
+void gatheredFish(vector<string> &, int &);
+
+void gatheredBoar(vector<string> &, int &);
+
 //Weather
 void weather(items, int &, int &, int &);
 
@@ -117,12 +131,11 @@ int main(){
 	int hunger=0, thirst=0, energy=0, supplyCount=0, dayCount=0, radioBonus=0;
 	int scenario;
 	vector<string> inventory;
-	char choice;
 	vector<int> occuredScenarios; //if a scenario has occured, its corresponding integer is added
 	
 	
 	startingPrompt();
-	choosingSupplies(choice, supplyCount, MAX_SUPPLY_COUNT, inventory, radioBonus);
+	choosingSupplies(supplyCount, MAX_SUPPLY_COUNT, inventory, radioBonus);
 	cout<<endl;
 	
 	//generating random starting stats
@@ -143,25 +156,30 @@ int main(){
 	
 	while((hunger>0&&thirst>0&&energy>0)&&(dayCount<30)){ //loop ends when any of the stats go below 0 or survived 30 days
 		dayCount++;
+		cout<<"Day: "<<dayCount<<endl;
+		Sleep(1000);
+		
 		if(dayCount>=15){ //chance to get rescued early. keep at top of while loop
 			if(rescuedEarly(radioBonus, early)){
 				break;
 			}
 		}
 		
-		cout<<"Day: "<<dayCount<<endl;
-		Sleep(1000);
 		viewStats(hunger, thirst, energy, inventory);
-		
-		
 		
 		if(!hasShelter){ //if the user does not have shelter built
 			buildShelter(hasShelter, energy, inventory);
 		}
 		
+		gatherFood(inventory, hunger, thirst, energy);
+		
 		randomWashup(inventory);
 		
-		if(thirst<=60){ //if thirst goes below 60
+		if(hunger<=60){//if hunger goes below 50
+			eatFood(inventory, hunger, thirst, energy);
+		}
+		
+		if(thirst<=50){ //if thirst goes below 50
 			gatherWater(thirst, energy, inventory);
 		}
 		
@@ -222,7 +240,7 @@ void startingPrompt(){ //if you add supplies make sure you add choosingSupplies
 	Sleep(2000);
 	cout<<"You must swim to the shore, but you can only carry 3 supplies:"<<endl;
 	Sleep(3000);
-	cout<<"a. Water"<<endl;
+	cout<<"a. Water bottle"<<endl;
 	Sleep(500);
 	cout<<"b. First aid kit"<<endl;
 	Sleep(500);
@@ -237,17 +255,18 @@ void startingPrompt(){ //if you add supplies make sure you add choosingSupplies
 	cout<<"What will you choose?"<<endl;
 }
 
-void choosingSupplies(char choice, int &supplyCount, const int MAX_SUPPLY_COUNT, vector<string> &inventory, int &radioBonus){
+void choosingSupplies(int &supplyCount, const int MAX_SUPPLY_COUNT, vector<string> &inventory, int &radioBonus){
+	char choice;
 	while(supplyCount<MAX_SUPPLY_COUNT){
 		cout<<">>";
 		cin>>choice;
 		switch(choice){
-			case 'a': inventory.push_back("water"); cout<<"You chose water.\n"; break;
-			case 'b': inventory.push_back("first aid kit"); cout<<"You chose first aid kit.\n"; break;
-			case 'c': inventory.push_back("canned beans"); cout<<"You chose canned beans.\n"; break;
-			case 'd': inventory.push_back("lighter"); cout<<"You chose a lighter.\n"; break;
-			case 'e': inventory.push_back("rope"); cout<<"You chose rope.\n"; break;
-			case 'f': inventory.push_back("radio"); cout<<"You chose a radio.\n"; radioBonus=50; break;
+			case 'a': inventory.push_back(water.name); cout<<"You chose water bottle.\n"; break;
+			case 'b': inventory.push_back(firstAidKit.name); cout<<"You chose first aid kit.\n"; break;
+			case 'c': inventory.push_back(cannedBeans.name); cout<<"You chose canned beans.\n"; break;
+			case 'd': inventory.push_back(lighter.name); cout<<"You chose a lighter.\n"; break;
+			case 'e': inventory.push_back(rope.name); cout<<"You chose rope.\n"; break;
+			case 'f': inventory.push_back(radio.name); cout<<"You chose a radio.\n"; radioBonus=50; break;
 			default: cout<<"That is not an option.\n"; --supplyCount; break;
 		}
 		++supplyCount;
@@ -397,7 +416,7 @@ void buildShelter(bool &hasShelter, int &energy, vector<string> &inventory){
 		cin>>choice;
 		stringToLower(choice);
 		if(choice=="yes"){
-			if(inStringVector(inventory, "rope")){ //if user has rope in their inventory
+			if(inStringVector(inventory, rope.name)){ //if user has rope in their inventory
 				choice="";
 				cout<<"Would you like to use your rope to build the shelter?"<<endl;
 				cout<<"This will take 20 less energy than building the shelter without a rope."<<endl;
@@ -407,7 +426,7 @@ void buildShelter(bool &hasShelter, int &energy, vector<string> &inventory){
 					stringToLower(choice);
 					if(choice=="yes"){
 						energy+=rope.energy;
-						findAndRemove(inventory, "rope"); //removes one rope from inventory
+						findAndRemove(inventory, rope.name); //removes one rope from inventory
 						//add 20 energy so when the energy is subtracted 40, the net change is -20
 						//also, remove "rope" from inventory
 						cout<<"You have used your rope."<<endl;
@@ -441,7 +460,7 @@ void gatherWater(int &thirst, int &energy, vector<string> &inventory){
 	string choice="";
 	bool usedWater=0;
 	
-	if(inStringVector(inventory, "water")){
+	if(inStringVector(inventory, water.name)){
 		cout<<"You're getting thirsty. Would you like to use one of your water?"<<endl;
 		usedWater=1;
 		while(choice!="yes"&&choice!="no"){
@@ -451,7 +470,7 @@ void gatherWater(int &thirst, int &energy, vector<string> &inventory){
 			if(choice=="yes"){
 				thirst+=water.thirst;
 				adjustStat(thirst);
-				findAndRemove(inventory, "water"); //removes one water from inventory
+				findAndRemove(inventory, water.name); //removes one water from inventory
 				cout<<"You have used one water and gained "<<water.thirst<<" thirst."<<endl;
 				Sleep(2000);
 			}
@@ -495,6 +514,103 @@ void gatherWater(int &thirst, int &energy, vector<string> &inventory){
 	Sleep(2000);
 }
 
+void gatherFood(vector<string> &inventory, int &hunger, int &thirst, int &energy){
+	char choice;
+	string answer="";
+	int count=0;
+	cout<<"Would you like to gather food?"<<endl;
+	while(answer!="yes"&&answer!="no"){
+		cout<<">>";
+		cin>>answer;
+		stringToLower(answer);
+		if(answer=="yes"){
+			cout<<"What would you like to gather?"<<endl;
+			cout<<"a. Coconuts"<<endl;
+			cout<<"b. Berries"<<endl;
+			cout<<"c. Chicken"<<endl;
+			cout<<"d. Fish"<<endl;
+			cout<<"e. Boar"<<endl;
+			cout<<">>";
+			cin>>choice;
+			
+			while(count==0){
+				switch(choice){
+					case 'a': gatheredCoconut(inventory, energy); break;
+					case 'b': gatheredBerries(inventory, energy); break;
+					case 'c': gatheredChicken(inventory, energy); break;
+					case 'd': gatheredFish(inventory, energy); break;
+					case 'e': gatheredBoar(inventory, energy); break;
+					default: cout<<"That is not an option.\n"; --count; break;
+				}
+				++count;
+			}
+		}
+		else if(answer=="no"){
+			cout<<"You decided not to gather food."<<endl;
+		}
+		else{
+			cout<<"Not a valid answer. Please type 'yes' or 'no'."<<endl;
+		}
+	}
+	cout<<endl;
+	Sleep(3000);
+}
+
+void gatheredCoconut(vector<string> &inventory, int &energy){
+	inventory.push_back(coconut.name);
+	cout<<"You used "<<-coconut.energy<<" energy to get a coconut."<<endl;
+	energy+=coconut.energy;
+}
+
+void gatheredBerries(vector<string> &inventory, int &energy){
+	inventory.push_back(berries.name);
+	cout<<"You used "<<-berries.energy<<" energy to get berries."<<endl;
+	energy+=berries.energy;
+}
+
+void gatheredChicken(vector<string> &inventory, int &energy){
+	int gotChickenChance=1+rand()%2; //50% chance they don't catch a chicken
+	if(gotChickenChance==1){
+		inventory.push_back(chicken.name);
+		cout<<"You used "<<-chicken.energy<<" energy to get a chicken."<<endl;
+		energy+=chicken.energy;
+	}
+	else{
+		cout<<"You fought long and hard, but you didn't capture the chicken."<<endl;
+		Sleep(2000);
+		cout<<"You used "<<-chicken.energy<<" energy to get a chicken."<<endl;
+		energy+=chicken.energy;
+	}
+}
+
+void gatheredFish(vector<string> &inventory, int &energy){
+	int sharkAttackChance=1+rand()%5; //20% chance of a shark attack
+	if(sharkAttackChance==1){
+		cout<<"While you went to gather fish, you were attacked by a shark."<<endl;
+		cout<<"You lost "<<-shark.energy<<" and did not catch any fish."<<endl;
+		energy+=shark.energy;
+	}
+	else{
+		inventory.push_back(fish.name);
+		cout<<"You used "<<-fish.energy<<" to catch a fish."<<endl;
+		energy+=fish.energy;
+	}
+}
+
+void gatheredBoar(vector<string> &inventory, int &energy){
+	int gotBoarChance=1+rand()%3; //33% chance they get the boar
+	if(gotBoarChance==1){
+		inventory.push_back(boar.name);
+		cout<<"You used "<<-boar.energy<<" energy to catch a boar."<<endl;
+		energy+=boar.energy;
+	}
+	else{
+		cout<<"You were badly injured trying to capture a boar."<<endl;
+		cout<<"You have lost "<<-boar.energy<<" and did not catch a boar"<<endl;
+		energy+=boar.energy;
+	}
+}
+
 //Weather
 void weather(items weather, int &hunger, int &thirst, int &energy){
 	/*
@@ -506,13 +622,16 @@ void weather(items weather, int &hunger, int &thirst, int &energy){
 	cout<<"There has been a "<<weather.name<<endl;
 	if(weather.isHostile){
 		cout<<"You have lost: "<<endl;
+		cout<<-weather.hunger<<" hunger,"<<endl;
+		cout<<-weather.thirst<<" thirst, and"<<endl;
+		cout<<-weather.energy<<" energy."<<endl;
 	}
 	else{
 		cout<<"You have gained: "<<endl;
+		cout<<weather.hunger<<" hunger,"<<endl;
+		cout<<weather.thirst<<" thirst, and"<<endl;
+		cout<<weather.energy<<" energy."<<endl;
 	}
-	cout<<weather.hunger<<" hunger,"<<endl;
-	cout<<weather.thirst<<" thirst, and"<<endl;
-	cout<<weather.energy<<" energy."<<endl;
 	hunger+=weather.hunger;
 	thirst+=weather.thirst;
 	energy+=weather.energy;
@@ -565,16 +684,11 @@ void randomWashup(vector<string> &inventory){
 	Outputs: Addes the item to the inventory if the player gets lucky
 	*/
 	int r1=1+rand()%10, r2=1+rand()%5;
-	string a[5]={"water bottle", "first aid kit", "canned beans", "lighter", "rope"};
+	string a[5]={water.name, firstAidKit.name, cannedBeans.name, lighter.name, rope.name};
 	if(r1==1){
 		cout<<"A "<<a[r2-1]<<" washed up to the shore!"<<endl<<endl;
 		Sleep(3000);
-		if(r2==1){
-			inventory.push_back("water");
-		}
-		else{
-			inventory.push_back(a[r2-1]);
-		}
+		inventory.push_back(a[r2-1]);
 	}
 }
 
@@ -601,4 +715,3 @@ void endOfDay(int &hunger, int &thirst, int &energy, bool hasShelter){
 	adjustStat(energy);
 	Sleep(5000);
 }
-
