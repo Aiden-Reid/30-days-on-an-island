@@ -37,7 +37,7 @@ struct items rope {"rope", 0, 0, 20};
 
 struct items radio {"radio"};
 
-struct items campfire {"campfire", 0, 0, 15};
+struct items campfire {"campfire", 0, 0, -15};
 
 struct items shelter {"shelter", 0, 0, 40};
 
@@ -73,6 +73,8 @@ void choosingSupplies(vector<string> &, int &, int &, const int);
 
 void viewStats(vector<string>, int, int, int);
 
+void notValidAnswer();
+
 void stringToLower(string &);
 
 bool inStringVector(vector<string>, string);
@@ -96,6 +98,8 @@ void buildShelter(vector<string> &, int &, bool &);
 
 void gatherSupplies(vector<string> &, int &, int &, int &);
 
+void makeCampfire(vector<string> &, int &);
+
 void drinkWater(vector<string> &, int &, int &);
 
 void gatherWater(vector<string> &, int &, int &);
@@ -113,7 +117,7 @@ void gatheredFish(vector<string> &, int &);
 void gatheredBoar(vector<string> &, int &);
 
 //Weather
-void weather(items, int &, int &, int &);
+void weather(items, int &, int &, int &, bool &);
 
 //Illness
 bool hasPoisoning();
@@ -322,6 +326,10 @@ void viewStats(vector<string> inventory, int hunger, int thirst, int energy){
 	cout<<".\n\n"<<flush;
 }
 
+void notValidAnswer(){
+	cout<<"Not a valid answer. Please type 'yes' or 'no'."<<endl;
+}
+
 void stringToLower(string &s){
 	/*
 	Converts string to all lowercase letters
@@ -424,7 +432,7 @@ void buildShelter(vector<string> &inventory, int &energy, bool &hasShelter){
 			if(inStringVector(inventory, rope.name)){ //if user has rope in their inventory
 				choice="";
 				cout<<"Would you like to use your rope to build the shelter?"<<endl;
-				cout<<"This will take 20 less energy than building the shelter without a rope."<<endl;
+				cout<<"This will take "<<rope.energy<<" less energy than building the shelter without a rope."<<endl;
 				while(choice!="yes"&&choice!="no"){
 					cout<<">>";
 					cin>>choice;
@@ -454,7 +462,7 @@ void buildShelter(vector<string> &inventory, int &energy, bool &hasShelter){
 			hasShelter=0;
 		}
 		else{
-			cout<<"Not a valid answer. Please type 'yes' or 'no'."<<endl;
+			notValidAnswer();
 		}
 	}
 	adjustStat(energy);
@@ -486,7 +494,7 @@ void gatherSupplies(vector<string> &inventory, int &hunger, int &thirst, int &en
 				switch(choice){
 					case 'a': gatherFood(inventory, hunger, thirst, energy); break;
 					case 'b': gatherWater(inventory, thirst, energy); break;
-					case 'c': break; //add gatherCampfire
+					case 'c': makeCampfire(inventory, energy); break;
 					case 'd': cout<<"You decided to not gather any supplies.\n"<<endl; break;
 					default: cout<<"That is not an option."<<endl; --count; break;
 				}
@@ -497,11 +505,44 @@ void gatherSupplies(vector<string> &inventory, int &hunger, int &thirst, int &en
 			cout<<"You decided to not gather any supplies.\n"<<endl;
 		}
 		else{
-			cout<<"Not a valid answer. Please type 'yes' or 'no'."<<endl;
+			notValidAnswer();
 		}
 	}
 	Sleep(2000);
 	answer=""; //reset answer
+}
+
+void makeCampfire(vector<string> &inventory, int &energy){
+	string answer="";
+	bool usedLighter=0;
+	if(inStringVector(inventory, "lighter")){
+		cout<<"Would you like to use your lighter to make a campfire?"<<endl;
+		cout<<"This will take "<<lighter.energy<<" less energy than making a campfire without a lighter."<<endl;
+		while(answer!="yes"&&answer!="no"){
+			cout<<">>";
+			cin>>answer;
+			if(answer=="yes"){
+				usedLighter=1;
+				findAndRemove(inventory, "lighter");
+				energy+=lighter.energy;
+				cout<<"You used your lighter and you now have a campfire in your inventory."<<endl;
+			}
+			else if(answer=="no"){
+				cout<<"You decided to not use your lighter."<<endl;
+				cout<<"You now have a campfire in your inventory.\n"<<endl;
+			}
+			else{
+				notValidAnswer();
+			}
+		}
+	}
+	else if(!inStringVector(inventory, "lighter")||usedLighter==0){
+		cout<<"You used "<<-campfire.energy<<" energy to make a campfire."<<endl;
+		energy+=campfire.energy;
+		Sleep(500);
+		cout<<"You now have a campfire in your inventory.\n"<<endl;
+		inventory.push_back("campfire");
+	}
 }
 
 void drinkWater(vector<string> &inventory, int &thirst, int &energy){ //change to drink water. add gatherWater
@@ -524,7 +565,7 @@ void drinkWater(vector<string> &inventory, int &thirst, int &energy){ //change t
 				Sleep(2000);
 			}
 			else{
-				cout<<"Not a valid answer. Please type 'yes' or 'no'."<<endl;
+				notValidAnswer();
 			}
 		}
 	}
@@ -652,7 +693,7 @@ void gatheredBoar(vector<string> &inventory, int &energy){
 }
 
 //Weather
-void weather(items weather, int &hunger, int &thirst, int &energy){
+void weather(items weather, int &hunger, int &thirst, int &energy, bool &hasShelter){
 	/*
 	Prints out that there has been a disaster and what disaster it is
 	Parameters: Pass the disaster by referece, and pass hunger, thirst, 
@@ -660,16 +701,26 @@ void weather(items weather, int &hunger, int &thirst, int &energy){
 	Outputs: Changes hunger, thirst, and energy accordingly.
 	*/
 	cout<<"There has been a "<<weather.name<<endl;
+	Sleep(2000);
 	if(weather.isHostile){
 		cout<<"You have lost: "<<endl;
+		Sleep(500);
 		cout<<-weather.hunger<<" hunger,"<<endl;
+		Sleep(500);
 		cout<<-weather.thirst<<" thirst, and"<<endl;
+		Sleep(500);
 		cout<<-weather.energy<<" energy."<<endl;
+		Sleep(2000);
+		cout<<"You shelter also has been destroyed."<<endl;
+		hasShelter=0;
 	}
 	else{
 		cout<<"You have gained: "<<endl;
+		Sleep(500);
 		cout<<weather.hunger<<" hunger,"<<endl;
+		Sleep(500);
 		cout<<weather.thirst<<" thirst, and"<<endl;
+		Sleep(500);
 		cout<<weather.energy<<" energy."<<endl;
 	}
 	hunger+=weather.hunger;
