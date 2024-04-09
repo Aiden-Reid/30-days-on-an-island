@@ -85,10 +85,6 @@ bool inStringVector(vector<string>, string);
 
 void findAndRemove(vector<string> &, string);
 
-bool inCharVector(vector<char>, char);
-
-bool inIntVector(vector<int>, int);
-
 void adjustStat(int &);
 
 /*
@@ -149,9 +145,7 @@ int main(){
 	const int MAX_SUPPLY_COUNT=3;
 	bool hasShelter=0, early=0;
 	int hunger=0, thirst=0, energy=0, supplyCount=0, dayCount=0, radioBonus=0;
-	int scenario;
 	vector<string> inventory;
-	vector<int> occuredScenarios; //if a scenario has occured, its corresponding integer is added
 	
 	/*
 	Start of game
@@ -400,34 +394,6 @@ void findAndRemove(vector<string> &v, string s){
 	if(it!=v.end()){ //if element is in vector
 		v.erase(it);
 	}
-}
-
-bool inCharVector(vector<char> v, char c){
-	/*
-	Checks if a character is in an character vector.
-	Parameters: A character vector and a character
-	Outputs: If the character is in the vector, 1 is returned. If not, 0 is returned.
-	*/
-	for(char k: v){
-		if(k==c){
-			return 1;
-		}
-	}
-	return 0;
-}
-
-bool inIntVector(vector<int> v, int x){
-	/*
-	Checks if an integer is in an integer vector.
-	Parameters: An integer vector and an integer
-	Outputs: If the integer is in the vector, 1 is returned. If not, 0 is returned.
-	*/
-	for(int n: v){
-		if(n==x){
-			return 1;
-		}
-	}
-	return 0;
 }
 
 void adjustStat(int &stat_){
