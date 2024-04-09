@@ -50,6 +50,8 @@ struct items tsunami {"tsunami", 0, 0, -50, 1};
 
 struct items thunderStorm {"thunder storm", 0, 0, -40, 1};
 
+struct items windStorm {"wind storm", 0, 0, -30, 1};
+
 //fruits and animals
 struct items coconut {"coconut", 5, 0, -5};
 
@@ -123,7 +125,7 @@ void gatheredBoar(vector<string> &, int &);
 void useFAK(vector<string> &, int &);
 
 //Weather
-void weather(items, vector<string> &, int &, int &, int &, bool &);
+void weather(vector<string> &, int &, int &, int &, bool &);
 
 //Illness
 bool hasPoisoning();
@@ -209,6 +211,11 @@ int main(){
 		}
 		
 		drinkWater(inventory, thirst, energy);
+		if(isDead(hunger, thirst, energy)){
+			break;
+		}
+		
+		weather(inventory, hunger, thirst, energy, hasShelter);
 		if(isDead(hunger, thirst, energy)){
 			break;
 		}
@@ -459,6 +466,7 @@ void buildShelter(vector<string> &inventory, int &energy, bool &hasShelter){
 			if(inStringVector(inventory, rope.name)){ //if user has rope in their inventory
 				choice="";
 				cout<<"Would you like to use your rope to build the shelter?"<<endl;
+				Sleep(500);
 				cout<<"This will take "<<rope.energy<<" less energy than building the shelter without a rope."<<endl;
 				while(choice!="yes"&&choice!="no"){
 					cout<<">>";
@@ -606,6 +614,7 @@ void drinkWater(vector<string> &inventory, int &thirst, int &energy){
 	while(answer!="yes"&&answer!="no"){
 		cout<<">>";
 		getline(cin, answer);
+		stringToLower(answer);
 		if(answer=="yes"){
 			if(inStringVector(inventory, water.name)){
 				cout<<"Would you like to use one of your water?"<<endl;
@@ -704,6 +713,7 @@ void eatFood(vector<string> &inventory, int &hunger, int &thirst, int &energy){
 		while(answer!="yes"&&answer!="no"){
 			cout<<">>";
 			getline(cin, answer);
+			stringToLower(answer);
 			if(answer=="yes"){
 				cout<<"Food in your inventory: ";
 				for(const auto &s: inventory){
@@ -822,9 +832,9 @@ void eatFood(vector<string> &inventory, int &hunger, int &thirst, int &energy){
 				notValidAnswer();
 			}
 		}
+		cout<<endl;
 	}
 	adjustStat(hunger);
-	cout<<endl;
 	Sleep(1000);
 }
 
@@ -945,6 +955,7 @@ void gatheredBoar(vector<string> &inventory, int &energy){
 	}
 	else{
 		cout<<"You were badly injured trying to capture a boar."<<endl;
+		Sleep(2000);
 		cout<<"You have lost "<<-boar.energy<<" energy and did not catch a boar."<<endl;
 	}
 	energy+=boar.energy;
@@ -982,58 +993,53 @@ void useFAK(vector<string> &inventory, int &energy){
 				notValidAnswer();
 			}
 		}
+		cout<<endl;
 	}
 	adjustStat(energy);
 	Sleep(1000);
-	cout<<endl;
 }
 
 //Weather
-void weather(items weather, vector<string> &inventory, int &hunger, int &thirst, int &energy, bool &hasShelter){
+void weather(vector<string> &inventory, int &hunger, int &thirst, int &energy, bool &hasShelter){
 	/*
+	There is a 10% chance a disaster occurs and of that 10%, there is a 25% chance for each disaster. 
 	Prints out that there has been a disaster and what disaster it is. If the disaster is hostile,
 	The player loses their shelter if they have one and the player loses an item from their inventory.
 	Parameters: Pass the disaster by referece, and pass hunger, thirst, 
 	and energy by reference
 	Outputs: Changes hunger, thirst, and energy accordingly.
 	*/
-	cout<<"There has been a "<<weather.name<<endl;
-	Sleep(2000);
-	if(weather.isHostile){
+	int c1=1+rand()%10, c2=(1+rand()%4)-1; //c2 used as index for weather vector
+	vector<items> weatherVector {heatWave, tsunami, thunderStorm, windStorm};
+	
+	if(c1==1){
+		cout<<"There has been a "<<weatherVector[c2].name<<"."<<endl;
+		Sleep(2000);
 		cout<<"You have lost: "<<endl;
 		Sleep(500);
-		cout<<-weather.hunger<<" hunger,"<<endl;
+		cout<<-weatherVector[c2].hunger<<" hunger,"<<endl;
 		Sleep(500);
-		cout<<-weather.thirst<<" thirst, and"<<endl;
+		cout<<-weatherVector[c2].thirst<<" thirst, and"<<endl;
 		Sleep(500);
-		cout<<-weather.energy<<" energy."<<endl;
+		cout<<-weatherVector[c2].energy<<" energy."<<endl;
 		Sleep(2000);
 		if(hasShelter){
 			cout<<"You shelter also has been destroyed."<<endl;
 			hasShelter=0;
 		}
 		Sleep(2000);
-		if(inventory.size()!=0){
-			int r=1+rand()%(inventory.size()-1);
+		if(inventory.size()!=0){ //removes random item from inventory
+			int r=(1+rand()%inventory.size())-1;
 			cout<<"You have lost "<<inventory[r]<<" from your inventory."<<endl;
 			findAndRemove(inventory, inventory[r]);
 			Sleep(2000);
 		}
+		hunger+=weatherVector[c2].hunger;
+		thirst+=weatherVector[c2].thirst;
+		energy+=weatherVector[c2].energy;
+		cout<<endl;
+		Sleep(3000);
 	}
-	else{
-		cout<<"You have gained: "<<endl;
-		Sleep(500);
-		cout<<weather.hunger<<" hunger,"<<endl;
-		Sleep(500);
-		cout<<weather.thirst<<" thirst, and"<<endl;
-		Sleep(500);
-		cout<<weather.energy<<" energy."<<endl;
-	}
-	hunger+=weather.hunger;
-	thirst+=weather.thirst;
-	energy+=weather.energy;
-	cout<<endl;
-	Sleep(3000);
 }
 
 //Illness
