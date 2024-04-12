@@ -73,7 +73,7 @@ Basic Functions
 */
 void startingPrompt();
 
-void choosingSupplies(vector<string> &, int &, int &, const int);
+void choosingSupplies(vector<string> &, int &, const int);
 
 void viewStats(vector<string>, int, int, int);
 
@@ -127,7 +127,7 @@ void weather(vector<string> &, int &, int &, int &, bool &);
 bool hasPoisoning();
 
 //Pure luck
-bool rescuedEarly(int, bool &);
+bool rescuedEarly(vector<string>, bool &);
 
 void randomWashup(vector<string> &);
 
@@ -144,14 +144,14 @@ int main(){
 	*/
 	const int MAX_SUPPLY_COUNT=3;
 	bool hasShelter=0, early=0;
-	int hunger=0, thirst=0, energy=0, supplyCount=0, dayCount=0, radioBonus=0;
+	int hunger=0, thirst=0, energy=0, supplyCount=0, dayCount=0;
 	vector<string> inventory;
 	
 	/*
 	Start of game
 	*/
 	startingPrompt();
-	choosingSupplies(inventory, supplyCount, radioBonus, MAX_SUPPLY_COUNT); //player chooses supplies
+	choosingSupplies(inventory, supplyCount, MAX_SUPPLY_COUNT); //player chooses supplies
 	cout<<endl;
 	
 	//generating random starting stats
@@ -173,12 +173,15 @@ int main(){
 	Sleep(1000);
 	
 	while((hunger>0&&thirst>0&&energy>0)&&(dayCount<30)){ //loop ends when any of the stats go below 0 or survived 30 days
-		dayCount++;
+		++dayCount;
 		cout<<"Day: "<<dayCount<<".\n"<<endl;
 		Sleep(1000);
+		if(dayCount==30){ //breaks out of loop when day 30 is reached and after it's displayed
+			break;
+		}
 		
 		if(dayCount>=15){ //chance to get rescued early. keep at top of while loop
-			if(rescuedEarly(radioBonus, early)){
+			if(rescuedEarly(inventory, early)){
 				break;
 			}
 		}
@@ -232,33 +235,33 @@ int main(){
 	Final Messages
 	*/
 	if(dayCount==30){
-		cout<<"You did it!"<<endl;
+		cout<<"\nYou did it!"<<endl;
 		Sleep(4000);
 		cout<<"You were rescued and they made a Hollywood movie about you starring Tom Hanks.\n"<<flush;
 		Sleep(4000);
 		cout<<"Good job!"<<endl;
 	}
 	else if(early){
-		cout<<"You were rescued early on day "<<dayCount<<"!"<<endl;
+		cout<<"\nYou were rescued early on day "<<dayCount<<"!"<<endl;
 		Sleep(4000);
-		cout<<"You were brought to home safely and you were later interviewed by international"<<endl;
+		cout<<"You were brought home safely and you were later interviewed by international"<<endl;
 		cout<<"news networks and you published a book about your story."<<endl;
 		Sleep(5000);
 		cout<<"Good job!"<<endl;
 	}
 	else{
 		if(hunger<=0){
-			cout<<"You got too hungry and died on the island on day "<<dayCount<<"."<<endl;
+			cout<<"\nYou got too hungry and died on the island on day "<<dayCount<<"."<<endl;
 			Sleep(3000);
 			cout<<"Better luck next time!\n";
 		}
 		else if(thirst<=0){
-			cout<<"You got too thirsty and died on the island on day "<<dayCount<<"."<<endl;
+			cout<<"\nYou got too thirsty and died on the island on day "<<dayCount<<"."<<endl;
 			Sleep(3000);
 			cout<<"Better luck next time!\n";
 		}
 		else{
-			cout<<"You ran out of energy and died on the island on day "<<dayCount<<"."<<endl;
+			cout<<"\nYou ran out of energy and died on the island on day "<<dayCount<<"."<<endl;
 			Sleep(3000);
 			cout<<"Better luck next time!\n";
 		}
@@ -293,7 +296,7 @@ void startingPrompt(){ //if you add supplies make sure you add choosingSupplies
 	cout<<"What will you choose?"<<endl;
 }
 
-void choosingSupplies(vector<string> &inventory, int &supplyCount, int &radioBonus, const int MAX_SUPPLY_COUNT){
+void choosingSupplies(vector<string> &inventory, int &supplyCount, const int MAX_SUPPLY_COUNT){
 	/*
 	Asks what supplies the player wants to choose from the wreckage. A total of MAX_SUPPLY_COUNT supplies
 	can be chosen.
@@ -310,7 +313,7 @@ void choosingSupplies(vector<string> &inventory, int &supplyCount, int &radioBon
 			case 'c': inventory.push_back(cannedBeans.name); cout<<"You chose canned beans.\n"; break;
 			case 'd': inventory.push_back(lighter.name); cout<<"You chose a lighter.\n"; break;
 			case 'e': inventory.push_back(rope.name); cout<<"You chose rope.\n"; break;
-			case 'f': inventory.push_back(radio.name); cout<<"You chose a radio.\n"; radioBonus=50; break;
+			case 'f': inventory.push_back(radio.name); cout<<"You chose a radio.\n"; break;
 			default: cout<<"That is not an option.\n"; --supplyCount; break;
 		}
 		cin.ignore();
@@ -502,14 +505,13 @@ void gatherSupplies(vector<string> &inventory, int &hunger, int &thirst, int &en
 				cin>>choice;
 				switch(choice){
 					case 'a': gatherFood(inventory, hunger, thirst, energy); break;
-					case 'b': gatherWater(thirst, energy); break;
+					case 'b': gatherWater(thirst, energy); cin.ignore(); break;
 					case 'c': makeCampfire(inventory, energy); break;
-					case 'd': cout<<"You decided to not gather any supplies."<<endl; break;
-					default: cout<<"That is not an option."<<endl; --count; break;
+					case 'd': cout<<"You decided to not gather any supplies."<<endl; cin.ignore(); break;
+					default: cout<<"That is not an option."<<endl; --count; cin.ignore(); break;
 				}
 				++count;
 			}
-			cin.ignore();
 		}
 		else if(answer=="no"){
 			cout<<"You decided to not gather any supplies."<<endl;
@@ -534,6 +536,8 @@ void makeCampfire(vector<string> &inventory, int &energy){
 	string answer="";
 	bool usedLighter=0;
 	
+	cin.ignore();
+	
 	if(inStringVector(inventory, lighter.name)){
 		cout<<"Would you like to use your lighter to make a campfire?"<<endl;
 		cout<<"This will take "<<lighter.energy<<" less energy than making a campfire without a lighter."<<endl;
@@ -544,7 +548,7 @@ void makeCampfire(vector<string> &inventory, int &energy){
 			if(answer=="yes"){
 				usedLighter=1;
 				findAndRemove(inventory, lighter.name);
-				energy+=lighter.energy;
+				energy+=(lighter.energy+campfire.energy);
 				cout<<"You used your lighter and you now have a campfire in your inventory."<<endl;
 			}
 			else if(answer=="no"){
@@ -610,7 +614,7 @@ void drinkWater(vector<string> &inventory, int &thirst, int &energy){
 				cout<<"Would you like to gather some water?"<<endl;
 				while(choice!="yes"&&choice!="no"){
 					cout<<">>";
-					cin>>choice;
+					getline(cin, choice);
 					stringToLower(choice);
 					if(choice=="yes"){
 						gatherWater(thirst, energy);
@@ -1026,14 +1030,18 @@ bool hasPoisoning(){
 }
 
 //Pure luck
-bool rescuedEarly(int radioBonus, bool &early){
+bool rescuedEarly(vector<string> inventory, bool &early){
 	/*
 	Determines if the player gets rescued early
-	Parameters: The bonus for choosing the radio, which increases the chances to
+	Parameters: Inventory, which is checked if the player has a radio, which increases the chances to
 	get rescued early, and boolean early, which if the user is returned early this
 	becomes true. if not, it stays false.
 	Outputs: 1 if the user got lucky and got rescued early, 0 if not
 	*/
+	int radioBonus=0;
+	if(inStringVector(inventory, radio.name)){
+		radioBonus=50;
+	}
 	int rescueEarlyChance=1+rand()%(100-radioBonus); //5% if no radioBonus, 10% if radioBonus
 	if(rescueEarlyChance<=5){
 		early=1;
@@ -1055,12 +1063,11 @@ void randomWashup(vector<string> &inventory){
 	int r1=1+rand()%10, r2=1+rand()%5;
 	string a[5]={water.name, firstAidKit.name, cannedBeans.name, lighter.name, rope.name};
 	if(r1==1){
-		cout<<"A "<<a[r2-1]<<" washed up to the shore!"<<endl;
+		cout<<"\nA "<<a[r2-1]<<" washed up to the shore!"<<endl;
 		Sleep(1000);
-		cout<<"It has been added to your inventory."<<endl;
+		cout<<"It has been added to your inventory.\n"<<endl;
 		inventory.push_back(a[r2-1]);
 	}
-	cout<<endl;
 	Sleep(3000);
 }
 
