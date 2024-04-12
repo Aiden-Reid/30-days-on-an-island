@@ -580,7 +580,7 @@ void drinkWater(vector<string> &inventory, int &thirst, int &energy){
 	*/
 	string choice="", answer="";
 	
-	cout<<"Would you like to drink water?"<<endl;
+	cout<<"\nWould you like to drink water?"<<endl;
 	while(answer!="yes"&&answer!="no"){
 		cout<<">>";
 		getline(cin, answer);
@@ -678,7 +678,7 @@ void eatFood(vector<string> &inventory, int &hunger, int &thirst, int &energy){
 			break;
 		}
 	}
-	if(hasFood!=0){
+	if(hasFood){
 		cout<<"Would you like to eat your food?"<<endl;
 		while(answer!="yes"&&answer!="no"){
 			cout<<">>";
@@ -803,9 +803,9 @@ void eatFood(vector<string> &inventory, int &hunger, int &thirst, int &energy){
 			}
 		}
 		cout<<endl;
+		adjustStat(hunger);
+		Sleep(1000);
 	}
-	adjustStat(hunger);
-	Sleep(1000);
 }
 
 void gatherFood(vector<string> &inventory, int &hunger, int &thirst, int &energy){
@@ -842,7 +842,9 @@ void gatherFood(vector<string> &inventory, int &hunger, int &thirst, int &energy
 			default: cout<<"That is not an option.\n"; --count; break;
 		}
 		++count;
+		cin.ignore();
 	}
+	cout<<endl;
 	Sleep(1000);
 }
 
